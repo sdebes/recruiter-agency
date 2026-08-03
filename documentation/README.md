@@ -1,4 +1,4 @@
-# 🎯 Recruiter Agency
+# Recruiter Agency
 
 **Multi-agent job search system** — Evaluate listings, tailor CVs, track applications, and prep for interviews. Built with LangGraph, FastAPI (run_server.py), and Google ADK.
 
