@@ -1,6 +1,6 @@
 # Recruiter Agency
 
-**A multi-agent job search system** that discovers job listings, evaluates them against your profile, tailors CVs and cover letters, and tracks your applications — all with human-in-the-loop control and local-first data storage.
+**A multi-agent job search system** that discovers job listings, evaluates them against your profile, tailors CVs and cover letters, and tracks your applications, all with human-in-the-loop control and local-first data storage.
 
 Built with **FastAPI**, **LangGraph**, and a **Next.js** dashboard. Powered by Gemini/OpenRouter LLMs.
 
@@ -14,13 +14,13 @@ Built with **FastAPI**, **LangGraph**, and a **Next.js** dashboard. Powered by G
 | Feature | Description |
 |---------|-------------|
 | **A-F Evaluation** | Multi-dimension scoring (CV match, north star, compensation, culture, red flags) with configurable archetypes and weights |
-| **Human-in-the-Loop** | The pipeline pauses after evaluation — you decide Apply, Skip, or Review Later |
+| **Human-in-the-Loop** | The pipeline pauses after evaluation. You decide Apply, Skip, or Review Later |
 | **CV Tailoring** | LLM-powered CV + cover letter generation per listing |
 | **Application Tracker** | SQLite-backed tracker with filters and inline status updates |
 | **Listing Discovery** | Scrape job boards (jobs.ch, Jobindex.dk) via httpx/Playwright or Apify |
 | **Resume Builder** | Structured resume editor feeding the tailoring agents |
 | **Configurable Archetypes** | YAML-defined archetypes (Data Scientist, ML Engineer, AI Engineer, …) with adjustable scoring weights |
-| **Data Sovereignty** | Everything lives in local SQLite — no cloud sync |
+| **Data Sovereignty** | Everything lives in local SQLite, no cloud sync |
 
 ## Architecture
 
