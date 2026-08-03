@@ -4,6 +4,9 @@
 
 Built with **FastAPI**, **LangGraph**, and a **Next.js** dashboard. Powered by Gemini/OpenRouter LLMs.
 
+
+![alt text](https://github.com/user-attachments/assets/0c9025f0-5784-49d8-913f-2b41fb02dc92)
+
 ---
 
 ## Features
