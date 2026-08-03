@@ -1,0 +1,552 @@
+{% extends "base.html" %}
+{% set active_page = "dashboard" %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Dashboard</h2>
+  <p>Find, evaluate, and track job opportunities.</p>
+</div>
+
+<!-- Add Job Listing -->
+<div class="card section">
+  <div class="card-header">Add Job Listing</div>
+  <div class="card-body">
+    <p class="text-muted mb-4" style="font-size:13px;">
+      Paste a job URL to automatically scrape details, or add details manually.
+    </p>
+    <div class="flex gap-2" style="margin-bottom:12px;">
+      <input type="text" id="job-url-input" placeholder="https://www.jobs.ch/en/vacancies/detail/..." style="flex:1;">
+      <button class="btn btn-primary" onclick="addListingFromUrl()">Add Job Listing</button>
+    </div>
+    <div id="url-feedback" class="mb-4" style="min-height:0;"></div>
+
+    <details style="cursor:pointer;">
+      <summary style="font-weight:500; color:var(--primary); font-size:13px; padding:8px 0;">
+        Add Manually
+      </summary>
+      <div style="margin-top:12px;">
+        <form id="manual-form" onsubmit="addListingManual(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Job Title *</label>
+              <input type="text" name="title" required>
+            </div>
+            <div class="form-group">
+              <label>Company *</label>
+              <input type="text" name="company" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>URL</label>
+              <input type="url" name="url">
+            </div>
+            <div class="form-group">
+              <label>Location</label>
+              <input type="text" name="location">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Job Description</label>
+            <textarea name="description" rows="4"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Save Listing</button>
+        </form>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- Listings -->
+<div class="section">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="section-title" style="border:none; margin:0; padding:0;">Your Listings</h3>
+    <span id="listing-count" class="text-muted text-sm font-medium"></span>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>Filter by source</label>
+      <select id="filter-source" onchange="loadListings()">
+        <option value="">All</option>
+        <option value="manual">Manual</option>
+        <option value="scan">Scan</option>
+      </select>
+    </div>
+    <div class="filter-group" style="flex:1; min-width:200px;">
+      <label>Search</label>
+      <input type="text" id="filter-search" placeholder="Company or title..." oninput="loadListings()">
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div id="empty-state" class="empty-state" style="display:none;">
+    <h3>No listings yet</h3>
+    <p>Add a job URL above or search job boards to get started.</p>
+    <div class="empty-state-grid" style="margin-top:16px;">
+      <div class="empty-state-card">
+        <h4>Find Jobs</h4>
+        <p>Scan job boards for new listings</p>
+      </div>
+      <div class="empty-state-card">
+        <h4>Evaluate</h4>
+        <p>Score listings against your profile</p>
+      </div>
+      <div class="empty-state-card">
+        <h4>Track</h4>
+        <p>Monitor your application pipeline</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Listings Table -->
+  <div class="card" id="listings-container" style="display:none;">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Position</th>
+            <th>Location</th>
+            <th>Source</th>
+            <th>Score</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="listings-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Pipeline Overview -->
+<div class="section">
+  <h3 class="section-title">Pipeline Overview</h3>
+  <div class="stats-grid" id="pipeline-stats">
+    <div class="stat-card">
+      <div class="label">Total Listings</div>
+      <div class="value" id="pipe-listings">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Applications</div>
+      <div class="value" id="pipe-apps">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Avg Score</div>
+      <div class="value" id="pipe-score">N/A</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">To Evaluate</div>
+      <div class="value" id="pipe-to-eval">0</div>
+    </div>
+  </div>
+</div>
+
+<!-- Listing Detail Modal -->
+<div id="listing-modal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal-content">
+    <div class="modal-header">
+      <div>
+        <h3 id="modal-title"></h3>
+        <div class="sub" id="modal-company"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-quick-info" id="modal-quick-info"></div>
+    <div class="modal-body">
+      <div>
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab(this, 'desc')">Job Description</button>
+          <button class="tab" onclick="switchTab(this, 'eval')">AI Evaluation</button>
+          <button class="tab" onclick="switchTab(this, 'cv')">Tailored CV</button>
+        </div>
+        <div id="tab-desc" class="tab-content active"></div>
+        <div id="tab-eval" class="tab-content"></div>
+        <div id="tab-cv" class="tab-content"></div>
+      </div>
+      <div class="modal-sidebar" id="modal-sidebar"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let listings = [];
+
+// ── Load Listings ──────────────────────────────────────────────────
+function loadListings() {
+  const source = document.getElementById('filter-source').value;
+  const search = document.getElementById('filter-search').value.trim();
+  let url = '/api/listings';
+  const params = new URLSearchParams();
+  if (source) params.set('source', source);
+  if (search) params.set('search', search);
+  const qs = params.toString();
+  if (qs) url += '?' + qs;
+
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      listings = data;
+      renderListings();
+    })
+    .catch(() => showToast('Failed to load listings', 'error'));
+}
+
+function renderListings() {
+  document.getElementById('listing-count').textContent = listings.length + ' listings';
+  const empty = document.getElementById('empty-state');
+  const container = document.getElementById('listings-container');
+  const tbody = document.getElementById('listings-body');
+
+  if (listings.length === 0) {
+    empty.style.display = 'block';
+    container.style.display = 'none';
+    return;
+  }
+
+  empty.style.display = 'none';
+  container.style.display = 'block';
+  tbody.innerHTML = '';
+
+  listings.forEach(l => {
+    const hasDetails = l.seniority && l.seniority !== 'Not specified';
+    const hasSalary = l.salary_range && l.salary_range !== 'Not specified';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div>
+          <button class="table-btn" onclick="openModal('${l.id}')" style="font-size:15px; font-weight:700; color:var(--text); text-align:left; display:block; padding:0;">${escapeHtml(l.title)}</button>
+          <div class="listing-meta" style="font-size:12px; color:var(--text-muted); margin-top:2px;">
+            ${escapeHtml(l.company)}
+            ${hasDetails ? `&nbsp;|&nbsp;${escapeHtml(l.seniority)}` : ''}
+          </div>
+        </div>
+      </td>
+      <td>
+        <div class="listing-location">${l.location ? escapeHtml(l.location) : '-'}</div>
+        <div class="listing-salary">${hasSalary ? escapeHtml(l.salary_range) : ''}</div>
+      </td>
+      <td><span class="source-badge">${escapeHtml(l.source || '?')}</span></td>
+      <td id="score-cell-${l.id}"><span class="text-muted">-</span></td>
+      <td>
+        <div class="flex gap-2" style="justify-content:flex-end;">
+          <button class="btn btn-sm btn-primary" onclick="evaluateListing('${l.id}')" id="eval-btn-${l.id}">Score</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteListing('${l.id}')">&times;</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    // Load evaluation status
+    fetch(`/api/listings/${l.id}/evaluations`)
+      .then(r => r.json())
+      .then(evals => {
+        const cell = document.getElementById(`score-cell-${l.id}`);
+        if (evals && evals.length > 0) {
+          const sc = evals[0].global_score;
+          const color = sc >= 4 ? 'var(--success)' : sc >= 3.5 ? 'var(--warning)' : 'var(--danger)';
+          cell.innerHTML = `<span style="font-weight:600; color:${color};">${sc.toFixed(1)}</span>`;
+          document.getElementById(`eval-btn-${l.id}`).textContent = 'Re-score';
+        }
+      })
+      .catch(() => {});
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────
+function parseJsonResponse(r) {
+  return r.text().then(text => {
+    try { return JSON.parse(text); } catch(e) { throw new Error(text || `HTTP ${r.status}`); }
+  });
+}
+
+// ── Add Listing (URL) ──────────────────────────────────────────────
+function addListingFromUrl() {
+  const input = document.getElementById('job-url-input');
+  const url = input.value.trim();
+  if (!url) { showToast('Please enter a URL', 'warning'); return; }
+
+  const fb = document.getElementById('url-feedback');
+  fb.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> Scraping listing details...</div>';
+
+  fetch('/api/listings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  })
+  .then(r => {
+    if (r.status === 409) { showToast('Listing already exists', 'warning'); fb.innerHTML = ''; return null; }
+    if (!r.ok) return parseJsonResponse(r).then(d => { throw new Error(d.detail || 'Failed'); });
+    return parseJsonResponse(r);
+  })
+  .then(d => {
+    if (!d) return;
+    fb.innerHTML = '<div class="alert alert-success">Added successfully!</div>';
+    input.value = '';
+    loadListings();
+    loadPipelineStats();
+    setTimeout(() => fb.innerHTML = '', 3000);
+  })
+  .catch(e => {
+    fb.innerHTML = `<div class="alert alert-error">Failed: ${escapeHtml(e.message)}</div>`;
+  });
+}
+
+// ── Add Listing (Manual) ───────────────────────────────────────────
+function addListingManual(event) {
+  event.preventDefault();
+  const form = event.target;
+  const data = {};
+  new FormData(form).forEach((v, k) => { data[k] = v; });
+
+  const btn = form.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  fetch('/api/listings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  .then(r => {
+    if (!r.ok) return parseJsonResponse(r).then(d => { throw new Error(d.detail || 'Failed'); });
+    return parseJsonResponse(r);
+  })
+  .then(() => {
+    showToast('Listing added!', 'success');
+    form.reset();
+    loadListings();
+    loadPipelineStats();
+  })
+  .catch(e => showToast(e.message, 'error'))
+  .finally(() => { btn.disabled = false; btn.textContent = 'Save Listing'; });
+}
+
+// ── Delete Listing ─────────────────────────────────────────────────
+function deleteListing(id) {
+  if (!confirm('Delete this listing?')) return;
+  fetch(`/api/listings/${id}`, { method: 'DELETE' })
+    .then(r => r.json())
+    .then(() => {
+      loadListings();
+      loadPipelineStats();
+      showToast('Listing deleted', 'success');
+    })
+    .catch(() => showToast('Failed to delete', 'error'));
+}
+
+// ── Evaluate Listing ───────────────────────────────────────────────
+function evaluateListing(id) {
+  const btn = document.getElementById(`eval-btn-${id}`);
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Scoring...';
+
+  fetch(`/api/listings/${id}/evaluate`, { method: 'POST' })
+    .then(r => {
+      if (!r.ok) throw new Error('Evaluation failed');
+      return r.json();
+    })
+    .then(() => {
+      showToast('Evaluation complete!', 'success');
+      loadListings();
+    })
+    .catch(e => showToast(e.message, 'error'))
+    .finally(() => { btn.disabled = false; btn.textContent = orig; });
+}
+
+// ── Modal ──────────────────────────────────────────────────────────
+function openModal(id) {
+  const modal = document.getElementById('listing-modal');
+  const listing = listings.find(l => l.id === id);
+  if (!listing) return;
+
+  document.getElementById('modal-title').textContent = listing.title || 'Unknown Position';
+  document.getElementById('modal-company').textContent = listing.company || 'Unknown Company';
+  document.getElementById('modal-quick-info').innerHTML = `
+    ${listing.location ? `<span>${escapeHtml(listing.location)}</span>` : ''}
+    ${listing.seniority && listing.seniority !== 'Not specified' ? `<span>${escapeHtml(listing.seniority)}</span>` : ''}
+    ${listing.employment_type && listing.employment_type !== 'Not specified' ? `<span>${escapeHtml(listing.employment_type)}</span>` : ''}
+    ${listing.salary_range && listing.salary_range !== 'Not specified' ? `<span>${escapeHtml(listing.salary_range)}</span>` : ''}
+  `;
+
+  // Tab: Job Description
+  const descTab = document.getElementById('tab-desc');
+  descTab.innerHTML = `
+    <div style="white-space:pre-wrap; line-height:1.7;">${escapeHtml(listing.description || '_No description provided._')}</div>
+    ${listing.url ? `<div class="divider"></div><p><a href="${escapeHtml(listing.url)}" target="_blank" rel="noopener">View Original Listing</a></p>` : ''}
+  `;
+
+  // Tab: AI Evaluation
+  const evalTab = document.getElementById('tab-eval');
+  evalTab.innerHTML = '<div class="alert alert-info">Loading evaluation...</div>';
+  fetch(`/api/listings/${listing.id}/evaluations`)
+    .then(r => r.json())
+    .then(evals => {
+      if (evals.length > 0) {
+        evalTab.innerHTML = renderScores(evals[0]);
+      } else {
+        evalTab.innerHTML = `
+          <div class="alert alert-info">This listing has not been evaluated yet.</div>
+          <button class="btn btn-primary mt-4 btn-full" onclick="evaluateListing('${listing.id}'); closeModal();">Run AI Evaluation</button>
+        `;
+      }
+    })
+    .catch(() => { evalTab.innerHTML = '<div class="alert alert-error">Failed to load evaluation.</div>'; });
+
+  // Tab: Tailored CV
+  const cvTab = document.getElementById('tab-cv');
+  cvTab.innerHTML = '<div class="alert alert-info">Loading...</div>';
+  fetch(`/api/listings/${listing.id}/tailored-cvs`)
+    .then(r => r.json())
+    .then(cvs => {
+      if (cvs.length > 0) {
+        const cv = cvs[0];
+        cvTab.innerHTML = `
+          <div class="alert alert-success">Tailored CV generated on ${(cv.created_at || '').slice(0, 10)}</div>
+          ${cv.resume_builder_url ? `<p class="mb-4"><a href="${escapeHtml(cv.resume_builder_url)}" target="_blank" rel="noopener">Open in Resume Builder</a></p>` : ''}
+          ${cv.commentary ? `<details style="cursor:pointer; margin-bottom:12px;"><summary style="font-weight:500; padding:8px 0;">Tailoring Commentary</summary><div style="margin-top:8px; white-space:pre-wrap;">${escapeHtml(cv.commentary)}</div></details>` : ''}
+          <p class="text-muted text-sm">Path: ${escapeHtml(cv.cv_path || '')}</p>
+        `;
+        if (cvs.length > 1) {
+          cvTab.innerHTML += `<details style="cursor:pointer;"><summary style="font-weight:500; padding:8px 0;">Previous versions (${cvs.length - 1} more)</summary><ul style="margin-top:8px; padding-left:20px;">${cvs.slice(1).map(c => `<li>${escapeHtml(c.cv_path.split('/').pop()) || ''}</li>`).join('')}</ul></details>`;
+        }
+      } else {
+        cvTab.innerHTML = `<div class="alert alert-info">No tailored CV yet. Generate one from the sidebar.</div>`;
+      }
+    })
+    .catch(() => { cvTab.innerHTML = '<div class="alert alert-error">Failed to load tailored CVs.</div>'; });
+
+  // Sidebar
+  const side = document.getElementById('modal-sidebar');
+  side.innerHTML = `
+    <h4 style="font-size:14px; font-weight:600; margin-bottom:12px;">Tailor</h4>
+    <button class="btn btn-primary btn-full mb-2" onclick="tailorCv('${listing.id}')">Tailor CV</button>
+    <button class="btn btn-full mb-4" onclick="showToast('Cover letter tailoring coming soon!', 'info')">Tailor Letter</button>
+    <div class="divider"></div>
+    <h4 style="font-size:14px; font-weight:600; margin-bottom:12px; margin-top:12px;">Status</h4>
+    <p class="text-muted text-sm">Add this listing to your tracker to manage its status.</p>
+  `;
+
+  modal.style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('listing-modal').style.display = 'none';
+}
+
+// ── Tailor CV ──────────────────────────────────────────────────────
+function tailorCv(listingId) {
+  fetch(`/api/listings/${listingId}/tailor-cv`, { method: 'POST' })
+    .then(r => {
+      if (!r.ok) throw new Error('Tailoring failed');
+      return r.json();
+    })
+    .then(() => {
+      showToast('CV tailored successfully!', 'success');
+      openModal(listingId);
+    })
+    .catch(e => showToast(e.message, 'error'));
+}
+
+// ── Tab switching ──────────────────────────────────────────────────
+function switchTab(btn, tabName) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + tabName).classList.add('active');
+}
+
+// ── Score Rendering ────────────────────────────────────────────────
+function renderScores(eval) {
+  const sc = eval.global_score || 0;
+  const color = sc >= 4 ? 'var(--success)' : sc >= 3.5 ? 'var(--warning)' : 'var(--danger)';
+  const label = sc >= 4.5 ? 'Strong Match' : sc >= 4 ? 'Good Match' : sc >= 3.5 ? 'Decent' : 'Weak Match';
+
+  let html = `
+    <div class="score-hero">
+      <div class="score-number" style="color:${color};">${sc.toFixed(1)}</div>
+      <div class="score-label" style="color:${color};">/ 5.0 &mdash; ${label}</div>
+    </div>
+  `;
+
+  const blocks = [
+    { label: 'Block B &mdash; CV Match', value: eval.cv_match_score },
+    { label: 'Block C &mdash; North Star', value: eval.north_star_score },
+    { label: 'Block D &mdash; Compensation', value: eval.comp_score },
+    { label: 'Block E &mdash; Culture / Fit', value: eval.culture_score },
+  ];
+
+  blocks.forEach(b => {
+    const pct = Math.min((b.value || 0) / 5 * 100, 100);
+    const c = (b.value || 0) >= 4 ? 'var(--success)' : (b.value || 0) >= 3.5 ? 'var(--warning)' : 'var(--danger)';
+    html += `
+      <div class="score-bar">
+        <div class="score-bar-header">
+          <span class="label">${b.label}</span>
+          <span class="value" style="color:${c};">${(b.value || 0).toFixed(1)}/5</span>
+        </div>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:${pct}%; background:${c};"></div></div>
+      </div>
+    `;
+  });
+
+  // Legitimacy badge
+  if (eval.legitimacy) {
+    const legColors = { 'High Confidence': 'var(--success)', 'Proceed with Caution': 'var(--warning)', 'Suspicious': 'var(--danger)' };
+    const lc = legColors[eval.legitimacy] || 'var(--text-muted)';
+    html += `<div class="mt-4"><span style="display:inline-block; padding:2px 12px; border-radius:100px; font-size:12px; font-weight:500; background:${lc}22; color:${lc}; border:1px solid ${lc};">${escapeHtml(eval.legitimacy)}</span></div>`;
+  }
+
+  // Red flags
+  const flags = eval.red_flags;
+  if (flags && Array.isArray(flags) && flags.length > 0) {
+    html += '<h4 class="mt-4 mb-2" style="font-size:14px;">Red Flags</h4>';
+    flags.forEach(f => {
+      html += `<div class="alert alert-warning" style="margin-bottom:8px;">${escapeHtml(f)}</div>`;
+    });
+  }
+
+  if (eval.detailed_notes) {
+    html += `<details style="cursor:pointer; margin-top:16px;"><summary style="font-weight:500; padding:8px 0;">Detailed Evaluation Notes</summary><div style="margin-top:8px; white-space:pre-wrap;">${escapeHtml(eval.detailed_notes)}</div></details>`;
+  }
+
+  return html;
+}
+
+// ── Pipeline Stats ─────────────────────────────────────────────────
+function loadPipelineStats() {
+  fetch('/api/stats')
+    .then(r => r.json())
+    .then(stats => {
+      document.getElementById('pipe-apps').textContent = stats.total;
+      document.getElementById('pipe-score').textContent =
+        stats.avg_score ? stats.avg_score.toFixed(1) + '/5' : 'N/A';
+    })
+    .catch(() => {});
+  fetch('/api/listings')
+    .then(r => r.json())
+    .then(ls => {
+      document.getElementById('pipe-listings').textContent = ls.length;
+      document.getElementById('pipe-to-eval').textContent = ls.filter(l => l.source !== 'manual').length;
+    })
+    .catch(() => {});
+}
+
+// ── Utility ────────────────────────────────────────────────────────
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ── Init ───────────────────────────────────────────────────────────
+loadListings();
+loadPipelineStats();
+</script>
+{% endblock %}

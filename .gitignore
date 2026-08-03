@@ -1,0 +1,58 @@
+# Recruiter Agency - .gitignore
+
+# Environment
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+
+# Database files
+agentdb/*.db
+agentdb/*.db-journal
+agentdb/*.db-wal
+agentdb/*.db-shm
+agentdb/*.json
+
+# Generated outputs
+output/*
+reports/*.md
+
+# Frontend build & dependencies
+frontend/node_modules/
+frontend/.next/
+frontend/*.tsbuildinfo
+
+# Archived / unneeded code
+unneeded/
+
+# Local tooling config
+.claude/
+
+# Personal source documents (never commit)
+config/portrait.jpg
+config/profile.yml
+config/resume.md
+config/resumeinfo.json
+config/storybank.md
+server/static/resume-builder/portrait.jpg
+
+# Secrets — OAuth credentials and tokens (never commit)
+config/secrets/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Notebooks (personal exploration, not project code)
+*.ipynb

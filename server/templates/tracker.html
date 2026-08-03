@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% set active_page = "tracker" %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Application Tracker</h2>
+  <p>All your evaluated applications in one place.</p>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid" id="tracker-stats">
+  <div class="stat-card">
+    <div class="label">Total</div>
+    <div class="value" id="trk-total">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Average Score</div>
+    <div class="value" id="trk-avg">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Applied</div>
+    <div class="value" id="trk-applied">-</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">Interview</div>
+    <div class="value" id="trk-interview">-</div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-bar">
+  <div class="filter-group">
+    <label>Filter by Status</label>
+    <select id="filter-status" onchange="loadApplications()">
+      <option value="All">All</option>
+      <option value="Evaluated">Evaluated</option>
+      <option value="Applied">Applied</option>
+      <option value="Responded">Responded</option>
+      <option value="Interview">Interview</option>
+      <option value="Offer">Offer</option>
+      <option value="Rejected">Rejected</option>
+      <option value="Discarded">Discarded</option>
+      <option value="SKIP">SKIP</option>
+    </select>
+  </div>
+  <div class="filter-group" style="min-width:250px;">
+    <label>Minimum Score: <span id="min-score-label">0.0</span></label>
+    <input type="range" min="0" max="5" step="0.5" value="0"
+           id="filter-min-score" oninput="updateMinScoreLabel()">
+  </div>
+</div>
+
+<!-- Empty State -->
+<div id="trk-empty" class="alert alert-info" style="display:none;">
+  No applications tracked yet. Add a job listing from the Dashboard to get started!
+</div>
+
+<!-- Table -->
+<div class="card" id="trk-table" style="display:none;">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Company</th>
+          <th>Role</th>
+          <th>Score</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="apps-body"></tbody>
+    </table>
+  </div>
+  <div id="trk-count" class="text-muted text-sm" style="padding:12px 20px; border-top:1px solid var(--border);"></div>
+</div>
+
+<!-- No match state -->
+<div id="trk-no-match" class="alert alert-info" style="display:none;">
+  No applications match the current filters.
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let apps = [];
+
+function loadApplications() {
+  const status = document.getElementById('filter-status').value;
+  const minScore = document.getElementById('filter-min-score').value;
+  let url = '/api/applications?min_score=' + minScore;
+  if (status && status !== 'All') url += '&status=' + encodeURIComponent(status);
+
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      apps = data;
+      renderApplications();
+    })
+    .catch(() => showToast('Failed to load applications', 'error'));
+}
+
+function renderApplications() {
+  const empty = document.getElementById('trk-empty');
+  const table = document.getElementById('trk-table');
+  const noMatch = document.getElementById('trk-no-match');
+  const tbody = document.getElementById('apps-body');
+  const count = document.getElementById('trk-count');
+
+  if (apps.length === 0) {
+    empty.style.display = 'block';
+    table.style.display = 'none';
+    noMatch.style.display = 'none';
+    return;
+  }
+
+  empty.style.display = 'none';
+  table.style.display = 'block';
+  noMatch.style.display = 'none';
+  tbody.innerHTML = '';
+  count.textContent = apps.length + ' applications matching filters';
+
+  apps.forEach((a, i) => {
+    const statusColors = {
+      'Evaluated': 'badge-evaluated', 'Applied': 'badge-applied',
+      'Responded': 'badge-responded', 'Interview': 'badge-interview',
+      'Offer': 'badge-offer', 'Rejected': 'badge-rejected',
+      'Discarded': 'badge-discarded', 'SKIP': 'badge-discarded',
+    };
+    const bClass = statusColors[a.status] || 'badge-evaluated';
+    const sc = a.score;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td><strong>${escapeHtml(a.company || '')}</strong></td>
+      <td>${escapeHtml(a.role || '')}</td>
+      <td>${sc !== null ? `<strong>${sc.toFixed(1)}</strong>` : '<span class="text-muted">N/A</span>'}</td>
+      <td><span class="badge ${bClass}">${escapeHtml(a.status || 'Evaluated')}</span></td>
+      <td class="text-muted">${(a.updated_at || '').slice(0, 10)}</td>
+      <td>
+        <select onchange="updateStatus('${a.id}', this.value)" style="padding:4px 8px; font-size:12px;">
+          <option value="">Update</option>
+          <option value="Applied">Applied</option>
+          <option value="Responded">Responded</option>
+          <option value="Interview">Interview</option>
+          <option value="Offer">Offer</option>
+          <option value="Rejected">Rejected</option>
+          <option value="Discarded">Discarded</option>
+        </select>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateStatus(appId, status) {
+  if (!status) return;
+  fetch(`/api/applications/${appId}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  })
+  .then(r => r.json())
+  .then(() => {
+    showToast('Status updated to ' + status, 'success');
+    loadApplications();
+    loadTrackerStats();
+  })
+  .catch(() => showToast('Failed to update status', 'error'));
+}
+
+function updateMinScoreLabel() {
+  const val = document.getElementById('filter-min-score').value;
+  document.getElementById('min-score-label').textContent = parseFloat(val).toFixed(1);
+  loadApplications();
+}
+
+function loadTrackerStats() {
+  fetch('/api/stats')
+    .then(r => r.json())
+    .then(stats => {
+      document.getElementById('trk-total').textContent = stats.total;
+      document.getElementById('trk-avg').textContent =
+        stats.avg_score ? stats.avg_score.toFixed(1) + '/5' : 'N/A';
+      document.getElementById('trk-applied').textContent = (stats.by_status && stats.by_status['Applied']) || 0;
+      document.getElementById('trk-interview').textContent = (stats.by_status && stats.by_status['Interview']) || 0;
+    })
+    .catch(() => {});
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+loadApplications();
+loadTrackerStats();
+</script>
+{% endblock %}

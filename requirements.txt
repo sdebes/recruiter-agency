@@ -1,0 +1,25 @@
+# Recruiter Agency - Dependencies
+# Managed via pyproject.toml; this file is for reference / pip-only setups.
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+jinja2>=3.1.0
+pyyaml>=6.0
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+google-auth>=2.0.0
+python-multipart>=0.0.12
+httpx>=0.27.0
+pandas>=2.0.0
+playwright>=1.40.0
+google-genai>=1.0.0
+langgraph>=0.3.0
+langchain-core>=0.3.0
+langgraph-checkpoint-sqlite>=3.0.0
+google-api-python-client>=2.0.0
+google-auth-httplib2>=0.2.0
+google-auth-oauthlib>=1.0.0
+python-docx>=1.1.0
+typing-extensions>=4.0.0
+python-jobspy>=1.0.0
+beautifulsoup4>=4.12.0
+apify-client>=1.0.0

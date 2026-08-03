@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recruiter Agency</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <h1>Recruiter Agency</h1>
+        <p>AI-powered job search</p>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/" class="nav-item {{ 'active' if active_page == 'dashboard' else '' }}">
+          <span>Dashboard</span>
+        </a>
+        <a href="/tracker" class="nav-item {{ 'active' if active_page == 'tracker' else '' }}">
+          <span>Tracker</span>
+        </a>
+        <a href="/settings" class="nav-item {{ 'active' if active_page == 'settings' else '' }}">
+          <span>Settings</span>
+        </a>
+        <a href="/resume-builder" class="nav-item {{ 'active' if active_page == 'resume_builder' else '' }}">
+          <span>Resume Builder</span>
+        </a>
+      </nav>
+      <div class="sidebar-stats" id="sidebar-stats">
+        <h3>Pipeline</h3>
+        <div class="stat-item"><span>Applications</span><span class="stat-value" id="stat-total">-</span></div>
+        <div class="stat-item"><span>Avg Score</span><span class="stat-value" id="stat-avg-score">-</span></div>
+      </div>
+      <div class="sidebar-footer">LangGraph + Gemini</div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script>
+    // ── Load sidebar stats ──────────────────────────────────────────
+    fetch('/api/stats')
+      .then(r => r.json())
+      .then(stats => {
+        document.getElementById('stat-total').textContent = stats.total;
+        document.getElementById('stat-avg-score').textContent =
+          stats.avg_score ? stats.avg_score.toFixed(1) + '/5' : 'N/A';
+      })
+      .catch(() => {});
+
+    // ── Toast notification helper ───────────────────────────────────
+    function showToast(message, type) {
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed; bottom: 24px; right: 24px; padding: 12px 20px;
+        border-radius: 8px; font-size: 14px; font-weight: 500;
+        z-index: 200; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        background: ${type === 'error' ? '#fef2f2' : type === 'warning' ? '#fffbeb' : '#ecfdf5'};
+        color: ${type === 'error' ? '#991b1b' : type === 'warning' ? '#92400e' : '#065f46'};
+        border: 1px solid ${type === 'error' ? '#fecaca' : type === 'warning' ? '#fde68a' : '#a7f3d0'};
+        animation: slideIn 0.2s ease;
+      `;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3500);
+    }
+
+    // ── Utility: serialize form ─────────────────────────────────────
+    function serializeForm(form) {
+      const data = {};
+      new FormData(form).forEach((value, key) => { data[key] = value; });
+      return data;
+    }
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

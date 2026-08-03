@@ -1,0 +1,137 @@
+# Recruiter Agency - Archetype Definitions
+# Each archetype defines how job listings are classified and scored.
+# Add, remove, or modify archetypes to match your target roles.
+# Scoring weights determine how each dimension contributes to the global score.
+
+archetypes:
+  - name: "Data Scientist"
+    keywords:
+      - "data science"
+      - "machine learning"
+      - "statistical modeling"
+      - "data mining"
+      - "predictive modeling"
+      - "A/B testing"
+      - "experimental design"
+      - "feature engineering"
+      - "data visualization"
+    scoring_weights:
+      cv_match: 0.30
+      north_star: 0.25
+      compensation: 0.15
+      culture: 0.15
+      red_flags: 0.15
+    seniority_levels: ["Junior", "Mid", "Senior"]
+
+  - name: "ML Engineer"
+    keywords:
+      - "ML engineer"
+      - "machine learning engineer"
+      - "model deployment"
+      - "MLOps"
+      - "model serving"
+      - "pipeline"
+      - "model training"
+      - "model optimization"
+      - "inference"
+    scoring_weights:
+      cv_match: 0.25
+      north_star: 0.20
+      compensation: 0.20
+      culture: 0.20
+      red_flags: 0.15
+    seniority_levels: ["Junior", "Mid", "Senior"]
+
+  - name: "AI Engineer"
+    keywords:
+      - "AI engineer"
+      - "artificial intelligence"
+      - "LLM"
+      - "large language model"
+      - "agent"
+      - "RAG"
+      - "retrieval augmented generation"
+      - "prompt engineering"
+      - "fine-tuning"
+      - "vector database"
+    scoring_weights:
+      cv_match: 0.25
+      north_star: 0.25
+      compensation: 0.20
+      culture: 0.15
+      red_flags: 0.15
+    seniority_levels: ["Junior", "Mid", "Senior"]
+
+  - name: "Data Analyst"
+    keywords:
+      - "data analyst"
+      - "business intelligence"
+      - "dashboard"
+      - "reporting"
+      - "SQL"
+      - "data pipeline"
+      - "analytics"
+      - "Tableau"
+      - "Power BI"
+    scoring_weights:
+      cv_match: 0.35
+      north_star: 0.15
+      compensation: 0.15
+      culture: 0.20
+      red_flags: 0.15
+    seniority_levels: ["Junior", "Mid", "Senior"]
+
+  - name: "Python Developer"
+    keywords:
+      - "Python developer"
+      - "backend"
+      - "API"
+      - "Django"
+      - "Flask"
+      - "FastAPI"
+      - "software engineer"
+      - "backend engineer"
+    scoring_weights:
+      cv_match: 0.25
+      north_star: 0.15
+      compensation: 0.20
+      culture: 0.20
+      red_flags: 0.20
+    seniority_levels: ["Junior", "Mid", "Senior"]
+
+# Global scoring thresholds
+scoring:
+  interpretation:
+    - min: 4.5
+      label: "Strong Match"
+      recommendation: "Apply immediately"
+    - min: 4.0
+      max: 4.4
+      label: "Good Match"
+      recommendation: "Worth applying"
+    - min: 3.5
+      max: 3.9
+      label: "Decent"
+      recommendation: "Apply only if specific reason"
+    - min: 0.0
+      max: 3.4
+      label: "Weak Match"
+      recommendation: "Recommend against applying"
+
+legitimacy:
+  tiers:
+    - name: "High Confidence"
+      description: "Real, active opening — most signals positive"
+    - name: "Proceed with Caution"
+      description: "Mixed signals, worth noting"
+    - name: "Suspicious"
+      description: "Multiple ghost indicators, investigate first"
+
+job_boards:
+  enabled:
+    - jobs_ch
+    - jobindex_dk
+  jobs_ch:
+    base_url: "https://www.jobs.ch/en/vacancies/"
+  jobindex_dk:
+    base_url: "https://www.jobindex.dk/jobsoegning"

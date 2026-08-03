@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+{% set active_page = "settings" %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Settings</h2>
+  <p>Configure your profile, target roles, and scoring system.</p>
+</div>
+
+<!-- Profile -->
+<div class="card section">
+  <div class="card-header">Profile</div>
+  <div class="card-body">
+    <form id="profile-form" onsubmit="saveProfile(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" name="candidate.full_name" value="{{ profile.candidate.full_name }}">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" name="candidate.email" value="{{ profile.candidate.email }}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" name="candidate.location" value="{{ profile.candidate.location }}">
+        </div>
+        <div class="form-group">
+          <label>Visa Status</label>
+          <input type="text" name="candidate.visa_status" value="{{ profile.candidate.visa_status }}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>LinkedIn URL</label>
+          <input type="url" name="candidate.linkedin" value="{{ profile.candidate.linkedin }}">
+        </div>
+        <div class="form-group">
+          <label>GitHub URL</label>
+          <input type="url" name="candidate.github" value="{{ profile.candidate.github }}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Target Roles &mdash; Primary</label>
+        <textarea name="target_roles.primary" rows="3">{{ profile.target_roles.primary | join('\n') }}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Target Roles &mdash; Secondary</label>
+        <textarea name="target_roles.secondary" rows="3">{{ profile.target_roles.secondary | join('\n') }}</textarea>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label>Target Range</label>
+          <input type="text" name="compensation.target_range" value="{{ profile.compensation.target_range }}">
+        </div>
+        <div class="form-group">
+          <label>Currency</label>
+          <input type="text" name="compensation.currency" value="{{ profile.compensation.currency }}">
+        </div>
+        <div class="form-group">
+          <label>Minimum</label>
+          <input type="text" name="compensation.minimum" value="{{ profile.compensation.minimum }}">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">Save Profile</button>
+    </form>
+  </div>
+</div>
+
+<!-- Search Preferences -->
+<div class="card section">
+  <div class="card-header">Search Preferences</div>
+  <div class="card-body">
+    <form id="search-form" onsubmit="saveSearchPrefs(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Country</label>
+          <input type="text" name="country" value="{{ profile.search_preferences.country }}">
+          <div class="help">Only show listings mentioning this country.</div>
+        </div>
+        <div class="form-group">
+          <label>Cities (comma-separated)</label>
+          <input type="text" name="cities" value="{{ profile.search_preferences.cities }}">
+          <div class="help">Only show listings in these cities.</div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">Save Search Preferences</button>
+    </form>
+  </div>
+</div>
+
+<!-- Archetypes -->
+<div class="card section">
+  <div class="card-header">Archetypes &amp; Scoring</div>
+  <div class="card-body">
+    <form id="archetypes-form" onsubmit="saveArchetypes(event)">
+      {% for arch in archetypes %}
+      <div class="expandable {% if loop.first %}open{% endif %}">
+        <div class="expandable-header" onclick="this.parentElement.classList.toggle('open')">
+          <span>{{ arch.name }}</span>
+          <span style="font-size:12px; color:var(--text-muted);">&#x25BC;</span>
+        </div>
+        <div class="expandable-body">
+          <div class="form-group">
+            <label>Keywords (comma-separated)</label>
+            <input type="text" name="keywords-{{ loop.index0 }}" value="{{ arch.keywords | join(', ') }}">
+          </div>
+          <div class="form-group">
+            <label style="margin-bottom:10px;">Scoring Weights</label>
+            <div class="form-row-3">
+              <div>
+                <label style="font-size:12px; font-weight:500; display:flex; justify-content:space-between;">
+                  <span>CV Match</span>
+                  <span class="range-value" id="w-cv-{{ loop.index0 }}-val">{{ '%.2f'|format(arch.scoring_weights.cv_match) }}</span>
+                </label>
+                <input type="range" min="0" max="1" step="0.05" value="{{ arch.scoring_weights.cv_match }}"
+                       name="weight-cv-{{ loop.index0 }}"
+                       oninput="document.getElementById('w-cv-{{ loop.index0 }}-val').textContent = parseFloat(this.value).toFixed(2)">
+              </div>
+              <div>
+                <label style="font-size:12px; font-weight:500; display:flex; justify-content:space-between;">
+                  <span>North Star</span>
+                  <span class="range-value" id="w-ns-{{ loop.index0 }}-val">{{ '%.2f'|format(arch.scoring_weights.north_star) }}</span>
+                </label>
+                <input type="range" min="0" max="1" step="0.05" value="{{ arch.scoring_weights.north_star }}"
+                       name="weight-ns-{{ loop.index0 }}"
+                       oninput="document.getElementById('w-ns-{{ loop.index0 }}-val').textContent = parseFloat(this.value).toFixed(2)">
+              </div>
+              <div>
+                <label style="font-size:12px; font-weight:500; display:flex; justify-content:space-between;">
+                  <span>Comp</span>
+                  <span class="range-value" id="w-comp-{{ loop.index0 }}-val">{{ '%.2f'|format(arch.scoring_weights.compensation) }}</span>
+                </label>
+                <input type="range" min="0" max="1" step="0.05" value="{{ arch.scoring_weights.compensation }}"
+                       name="weight-comp-{{ loop.index0 }}"
+                       oninput="document.getElementById('w-comp-{{ loop.index0 }}-val').textContent = parseFloat(this.value).toFixed(2)">
+              </div>
+              <div>
+                <label style="font-size:12px; font-weight:500; display:flex; justify-content:space-between;">
+                  <span>Culture</span>
+                  <span class="range-value" id="w-cult-{{ loop.index0 }}-val">{{ '%.2f'|format(arch.scoring_weights.culture) }}</span>
+                </label>
+                <input type="range" min="0" max="1" step="0.05" value="{{ arch.scoring_weights.culture }}"
+                       name="weight-cult-{{ loop.index0 }}"
+                       oninput="document.getElementById('w-cult-{{ loop.index0 }}-val').textContent = parseFloat(this.value).toFixed(2)">
+              </div>
+              <div>
+                <label style="font-size:12px; font-weight:500; display:flex; justify-content:space-between;">
+                  <span>Red Flags</span>
+                  <span class="range-value" id="w-rf-{{ loop.index0 }}-val">{{ '%.2f'|format(arch.scoring_weights.red_flags) }}</span>
+                </label>
+                <input type="range" min="0" max="1" step="0.05" value="{{ arch.scoring_weights.red_flags }}"
+                       name="weight-rf-{{ loop.index0 }}"
+                       oninput="document.getElementById('w-rf-{{ loop.index0 }}-val').textContent = parseFloat(this.value).toFixed(2)">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary mt-4">Save Archetypes</button>
+    </form>
+  </div>
+</div>
+
+<!-- Integrations -->
+<div class="card section">
+  <div class="card-header">Resume Builder</div>
+  <div class="card-body">
+    <p class="text-muted">
+      Your resume data is stored in <code>server/static/resume-builder/resumeinfo.json</code>
+      and can be edited from the <a href="/resume-builder">Resume Builder</a> page.
+    </p>
+    <p class="text-muted">
+      When you tailor a CV, the AI generates a version adapted to the target role
+      using this data, and the result appears immediately in the Resume Builder preview.
+    </p>
+  </div>
+</div>
+
+<!-- System Info -->
+<div class="card section">
+  <div class="card-header">System Info</div>
+  <div class="card-body">
+    <pre id="sys-info" style="background:#f9fafb; padding:16px; border-radius:8px; font-size:12px; overflow-x:auto;"></pre>
+    <p class="text-muted text-sm mt-4">
+      Configuration files are stored as YAML in the config/ directory. You can also edit them directly.
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Load System Info ───────────────────────────────────────────────
+fetch('/api/config/profile')
+  .then(r => r.json())
+  .then(p => {
+    document.getElementById('sys-info').textContent =
+      JSON.stringify({ 'Project Root': '{{ PROJECT_ROOT }}', 'Config Path': 'config/profile.yml', 'Database Path': 'agentdb/applications.db' }, null, 2);
+  })
+  .catch(() => {});
+
+// ── Save Profile ───────────────────────────────────────────────────
+function saveProfile(event) {
+  event.preventDefault();
+  const form = event.target;
+  const data = buildNestedProfile(form);
+  saveConfig('/api/config/profile', data, 'Profile saved!');
+}
+
+function buildNestedProfile(form) {
+  // Start with current profile shape, then overlay form values
+  const profile = {
+    candidate: {
+      full_name: form.querySelector('[name="candidate.full_name"]').value,
+      email: form.querySelector('[name="candidate.email"]').value,
+      location: form.querySelector('[name="candidate.location"]').value,
+      visa_status: form.querySelector('[name="candidate.visa_status"]').value,
+      linkedin: form.querySelector('[name="candidate.linkedin"]').value,
+      github: form.querySelector('[name="candidate.github"]').value,
+    },
+    target_roles: {
+      primary: form.querySelector('[name="target_roles.primary"]').value.split('\n').filter(Boolean).map(s => s.trim()),
+      secondary: form.querySelector('[name="target_roles.secondary"]').value.split('\n').filter(Boolean).map(s => s.trim()),
+    },
+    compensation: {
+      target_range: form.querySelector('[name="compensation.target_range"]').value,
+      currency: form.querySelector('[name="compensation.currency"]').value,
+      minimum: form.querySelector('[name="compensation.minimum"]').value,
+    },
+  };
+  return profile;
+}
+
+// ── Save Search Prefs ──────────────────────────────────────────────
+function saveSearchPrefs(event) {
+  event.preventDefault();
+  const data = {
+    search_preferences: {
+      country: document.querySelector('#search-form [name="country"]').value,
+      cities: document.querySelector('#search-form [name="cities"]').value,
+    }
+  };
+  saveConfig('/api/config/profile', data, 'Search preferences saved!');
+}
+
+// ── Save Archetypes ────────────────────────────────────────────────
+function saveArchetypes(event) {
+  event.preventDefault();
+  const form = event.target;
+  const data = { archetypes: [] };
+
+  {% for arch in archetypes %}
+  (function() {
+    const idx = {{ loop.index0 }};
+    data.archetypes.push({
+      name: "{{ arch.name }}",
+      keywords: (form.querySelector('[name="keywords-' + idx + '"]').value || '').split(',').map(s => s.trim()).filter(Boolean),
+      scoring_weights: {
+        cv_match: parseFloat(form.querySelector('[name="weight-cv-' + idx + '"]').value),
+        north_star: parseFloat(form.querySelector('[name="weight-ns-' + idx + '"]').value),
+        compensation: parseFloat(form.querySelector('[name="weight-comp-' + idx + '"]').value),
+        culture: parseFloat(form.querySelector('[name="weight-cult-' + idx + '"]').value),
+        red_flags: parseFloat(form.querySelector('[name="weight-rf-' + idx + '"]').value),
+      },
+      seniority_levels: {{ arch.seniority_levels | tojson }}
+    });
+  })();
+  {% endfor %}
+
+  saveConfig('/api/config/archetypes', data, 'Archetypes saved!');
+}
+
+// ── Generic config save ────────────────────────────────────────────
+function saveConfig(url, data, message) {
+  const btn = event.target.querySelector('button[type="submit"]') || event.submitter;
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('Failed');
+    return r.json();
+  })
+  .then(() => showToast(message, 'success'))
+  .catch(() => showToast('Failed to save configuration', 'error'))
+  .finally(() => { btn.disabled = false; btn.textContent = orig; });
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+</script>
+{% endblock %}
