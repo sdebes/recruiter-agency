@@ -1,4 +1,4 @@
-# 🎯 Recruiter Agency
+# Recruiter Agency
 
 **A multi-agent job search system** that discovers job listings, evaluates them against your profile, tailors CVs and cover letters, and tracks your applications — all with human-in-the-loop control and local-first data storage.
 
